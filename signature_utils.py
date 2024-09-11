@@ -59,8 +59,8 @@ def wilcoxon_enrcment_test(up_sig, down_sig, exp):
 def signature_values(exp, up_sig, format_flag, down_sig=None):
     up_sig = pd.DataFrame(up_sig).squeeze()
     # first letter of gene in upper case
- #   if format_flag:
-#        up_sig = up_sig.apply(lambda x: x[0].upper() + x[1:].lower())
+    if format_flag:
+        up_sig = up_sig.apply(lambda x: x[0].upper() + x[1:].lower())
     # keep genes in sig that appear in exp data
     up_sig = up_sig[up_sig.isin(exp.index)]
 
