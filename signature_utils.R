@@ -37,25 +37,7 @@ th = theme_bw() +
     axis.title.y = element_text(size = 25,angle=90),
     legend.text=element_text(size=25))
 
-unit_sig  = function(obj,lfeature){
-  rData = obj@meta.data
-  rData$t1 = unlist(rData[lfeature[1]])
-  rData$t2 = unlist(rData[lfeature[2]])
-  
-  if (mean(abs(rData$t1)) > mean(abs(rData$t2))){
-    scaleFactor =  mean(abs(rData$t1)) / mean(abs(rData$t2))
-    rData$t2 =  rData$t2 * scaleFactor
-    rRank =   rData$t1  + rData$t2
-    return(rRank)
-    
-  }else{
-    scaleFactor =  mean(abs(rData$t2))/  mean(abs(rData$t1))
-    rData$t1 = rData$t1 * scaleFactor
-    rRank =   rData$t1  + rData$t2
-    return(rRank)
-    
-  }
-}
+
 unite_sig_graph = function(obj, feature,redction = "tSNE",title = NULL){
   reduct_small_cup = tolower(redction)
   if (is.null(title)){
@@ -156,6 +138,7 @@ violine_t.test = function(obj,feture,idents,slotName = "data",is_ActiceIdent = F
   }
   return(rplot1)
 }
+
 violine_f.test = function(obj,feture,idents,slotName = "data",is_ActiceIdent = FALSE,dots = TRUE){
   if (!is_ActiceIdent){
     orig = ifelse(grepl(idents[1],names(obj@active.ident)),idents[1],idents[2])
@@ -193,6 +176,7 @@ violine_f.test = function(obj,feture,idents,slotName = "data",is_ActiceIdent = F
   }
   return(list(rplot1,posthoc))
 }
+
 combine_violine_grpah = function(obj,genes,idents,slotName = "counts",is_ActiceIdent = FALSE,dots = TRUE){
   plotlist = list()
   phl = list()

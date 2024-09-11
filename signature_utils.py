@@ -2,8 +2,11 @@ import pandas as pd
 import numpy as np
 from scipy.stats import ranksums, f_oneway
 import pingouin as pg 
-#import scanpy as sc
-
+import scanpy as sc
+from scipy.sparse import csc_matrix
+from scipy.stats import ttest_ind
+import seaborn as sns 
+import matplotlib.pyplot as plt
 
 alpha = 0.9
 epsilon = 0.001
@@ -50,7 +53,6 @@ def wilcoxon_enrcment_test(up_sig, down_sig, exp):
     #print(rank)
     return -1 * np.log(rank)
 
-
 # ---------------------------
 # calculates the signature of the data
 #
@@ -72,7 +74,6 @@ def signature_values(exp, up_sig, format_flag, down_sig=None):
     
     return exp.apply(lambda cell: wilcoxon_enrcment_test(up_sig, down_sig, cell), axis=0)
 
-
 # ---------------------------
 # Y - scores vector of cells
 # W - Adjacency matrix
@@ -82,29 +83,31 @@ def signature_values(exp, up_sig, format_flag, down_sig=None):
 # returns f/f1
 # ---------------------------
 def propagation(Y, W):
-    W = normW(W)
     f = np.array(Y)
     Y = np.array(Y)
-    W = np.array(W.values)
+   # f2 = calculate_propagation_matrix(W) @ Y
+
+    W = np.array(W)
+    W = normW(W)
     
     Y1 = np.ones(Y.shape, dtype=np.float64)
     f1 = np.ones(Y.shape, dtype=np.float64)
     flag = True
 
-    while(flag):
-        next_f = alpha*(W@f) + (1-alpha)*Y
-        next_f1 = alpha*(W@f1) + (1-alpha)*Y1
+    spars = csc_matrix(W)
+    while flag:
+        next_f = (alpha*(spars.dot(np.array(f).squeeze())) + (1-alpha)*Y)
+        next_f1 =  (alpha*(spars.dot(np.array(f).squeeze())) + (1-alpha)*Y1)  
     
         if np.linalg.norm(next_f - f) <= epsilon and np.linalg.norm(next_f1 - f1) <= epsilon:
             flag = False
         else:
-            #print(np.linalg.norm(next_f - f))
+           # print(np.linalg.norm(next_f - f))
+            #print(np.linalg.norm(next_f1 - f1))
             f = next_f
             f1 = next_f1
-            
+   # print("done")
     return np.array(f/f1) 
-
-
 # ---------------------------
 # W - Adjacency matrix
 # calculated for W:
@@ -116,21 +119,39 @@ def normW(W):
     sum_rows **= 1/2
     return W / sum_rows
 
-
-def run_signature_on_obj(obj, up_sig, down_sig=None, conn_flag =  True, umap_flag = True):
+def run_signature_on_obj(obj, up_sig,idt_col=None, down_sig=None, umap_flag = True, alpha = 0.9,prop_exp = None):
     exp = obj.to_df().T
-    sigs_scores = signature_values(exp, up_sig, down_sig) # wilcoxon score
-    if conn_flag:
-        graph = obj.obsp["connectivities"].toarray()
-    else:
-        graph = obj.obsp["distances"].toarray()
+    graph = obj.obsp["connectivities"].toarray()
+    sigs_scores = signature_values(exp, up_sig, down_sig)
     sigs_scores = propagation(sigs_scores,graph)
-    obj.obs["SigScore"]  =  sigs_scores
+    obj.obs["SigScore"] = sigs_scores
+    # color_map = "jet"
     if umap_flag:
         sc.pl.umap(obj, color=["SigScore"],color_map="magma")
     else:
         sc.pl.tsne(obj, color=["SigScore"],color_map="magma")
+    if not idt_col is None:
+      run_t_test(obj.obs,idt_col)
+    return sigs_scores
 
-    return obj
+def run_t_test(df, idt_col,return_p=False, ax=None):
+    idents = df[idt_col].unique()
+    ident_0 = df[df[idt_col] == idents[0]]['SigScore']
+    ident_1 = df[df[idt_col] == idents[1]]['SigScore']
 
+    _, p_value = ttest_ind(ident_0, ident_1)
+
+    if not ax is None:
+        p = sns.boxenplot(x=idt_col, y='SigScore', data=df.loc[df["SigScore"] > EPS],palette="Set2",ax=ax)
+        ax.set_xlabel(idt_col, fontsize=12)  # Increase x-axis label font size
+        ax.set_ylabel("SigScore", fontsize=12)  # Increase x-axis label font size
+    else:
+        plt.figure(figsize=(8, 6))
+        p = sns.boxenplot(x=idt_col, y='SigScore', data=df.loc[df["SigScore"] > EPS],palette="Set2")
+        plt.title(f'SigScore Distribution by Batch\nT-test p-value: {p_value:.4f}')
+        plt.xlabel(idt_col)
+        plt.ylabel('SigScore')
+    
+    if return_p:
+        return p
 
