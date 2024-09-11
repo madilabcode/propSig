@@ -20,8 +20,8 @@ library(formattable)
 library(kableExtra)
 library(reticulate)
 #setwd(r"(C:\Users\Ron\Desktop\MHCII)")
-use_python(use_python("/Users/kerenreshef/opt/anaconda3/bin/python", required = T))
-source_python("/Users/kerenreshef/Desktop/TAU/PhD/Madi_lab/Carmit_sc/Signature_propo/signature_utils.py")
+use_python(use_python(r"(C:\Users\user\anaconda3\envs\propSig\)", required = T))
+source_python(r"(D:\user\Desktop\propSig\signature_utils.py)")
 #source_python("/home/kerenre/UV_mouse/Signature_propo/signature_utils.py")
 #source_python(r"(C:\Users\Ron\Desktop\Ligand-Receptor-Pipeline\files\signature_utils.py)")
 Sys.setenv('R_MAX_VSIZE'=32000000000)
@@ -38,7 +38,7 @@ th = theme_bw() +
     legend.text=element_text(size=25))
 
 
-unite_sig_graph = function(obj, feature,redction = "tSNE",title = NULL){
+unite_sig_graph = function(obj, feature,redction = "UMAP",title = NULL){
   reduct_small_cup = tolower(redction)
   if (is.null(title)){
     rplot = FeaturePlot(obj, features = feature,pt.size=1, label = FALSE,label.size = 10,reduction = reduct_small_cup ) + scale_colour_gradientn(colours = jet.colors(20)) + th
@@ -46,7 +46,7 @@ unite_sig_graph = function(obj, feature,redction = "tSNE",title = NULL){
   rplot = FeaturePlot(obj, features = feature,pt.size=1, label = FALSE,label.size = 10,reduction = reduct_small_cup ) + scale_colour_gradientn(colours = jet.colors(20)) + th + ggtitle(title) 
   rtable = rplot$data
   rtable = rtable[rtable[feature] >=  mean(unlist(rtable[feature])) + 2*sd(unlist(rtable[feature])),]
-  rplot = rplot + stat_density2d(data = rtable,aes(x = unlist(rtable[paste(sep = "",redction,"_1")]), y = unlist(rtable[paste(sep = "",redction,"_2")])),geom='polygon',colour='red',size=0.9, bins = 5 ,alpha =0.1)
+  #rplot = rplot + stat_density2d(data = rtable,aes(x = unlist(rtable[paste(sep = "",redction,"_1")]), y = unlist(rtable[paste(sep = "",redction,"_2")])),geom='polygon',colour='red',size=0.9, bins = 5 ,alpha =0.1)
   return(rplot)
 }
 
@@ -61,8 +61,8 @@ unite_sig_graph = function(obj, feature,redction = "tSNE",title = NULL){
 #'
 #' @return list with: the objects with the signature df and the graph of the dimensional reduction of the signature
 #' 
-make_signature = function(obj, up_sig, idents ,is_active=FALSE, title = "signature score", down_sig = NULL, format_flag=TRUE, ingerated_flag=FALSE){
-  exp = obj@assays$RNA$data  %>% as.data.frame()
+make_signature = function(obj, up_sig, idents=NULL, is_active=FALSE, title = "signature score", down_sig = NULL, format_flag=TRUE, ingerated_flag=FALSE){
+  exp =  obj[["RNA"]]@data %>% as.data.frame()
   sigs_scores = signature_values(exp, up_sig, format_flag, down_sig) # wilcoxon score
   if (ingerated_flag){
     graph = obj@graphs$integrated_snn %>% as.data.frame() # knn graph

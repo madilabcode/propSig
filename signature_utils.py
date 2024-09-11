@@ -82,32 +82,30 @@ def signature_values(exp, up_sig, format_flag, down_sig=None):
 #
 # returns f/f1
 # ---------------------------
+
 def propagation(Y, W):
+    W = normW(W)
     f = np.array(Y)
     Y = np.array(Y)
-   # f2 = calculate_propagation_matrix(W) @ Y
-
-    W = np.array(W)
-    W = normW(W)
+    W = np.array(W.values)
     
     Y1 = np.ones(Y.shape, dtype=np.float64)
     f1 = np.ones(Y.shape, dtype=np.float64)
     flag = True
 
-    spars = csc_matrix(W)
-    while flag:
-        next_f = (alpha*(spars.dot(np.array(f).squeeze())) + (1-alpha)*Y)
-        next_f1 =  (alpha*(spars.dot(np.array(f).squeeze())) + (1-alpha)*Y1)  
+    while(flag):
+        next_f = alpha*(W@f) + (1-alpha)*Y
+        next_f1 = alpha*(W@f1) + (1-alpha)*Y1
     
         if np.linalg.norm(next_f - f) <= epsilon and np.linalg.norm(next_f1 - f1) <= epsilon:
             flag = False
         else:
-           # print(np.linalg.norm(next_f - f))
-            #print(np.linalg.norm(next_f1 - f1))
+            print(np.linalg.norm(next_f - f))
             f = next_f
             f1 = next_f1
-   # print("done")
+            
     return np.array(f/f1) 
+
 # ---------------------------
 # W - Adjacency matrix
 # calculated for W:
